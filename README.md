@@ -41,4 +41,4 @@ npm test            # node --test lib/**/*.test.ts (no framework)
 | `lib/metrics.ts` | client-side aggregation for overview/reports + CSV (tested) |
 | `lib/format.ts` | money, dates, enum labels, status colours |
 
-Step report with screenshots: `../docs/step-5-dashboard-report.md`.
+Project documentation (architecture, build-step reports, screenshots) lives in [Ai-calling-docs](https://github.com/Muhammedminhaj798/Ai-calling-docs). Step 5 report with screenshots: [reports/step-5/step-5-dashboard-report.md](https://github.com/Muhammedminhaj798/Ai-calling-docs/blob/main/reports/step-5/step-5-dashboard-report.md).
