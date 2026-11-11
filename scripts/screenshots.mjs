@@ -1,7 +1,7 @@
 // Dashboard screenshots through headless Chrome/Edge + raw CDP (Node 22 global WebSocket; no extra deps).
 // Development only: backend on 4000 with seeded mock data, dashboard on 3000. Logs in through the API with the
 // SEED_ADMIN_* credentials from ../backend/.env (never printed), injects the token, visits every route, writes PNGs.
-// Usage: npm run screenshots [-- <outDir> [admin|staff|approver]]   (default ../docs/screenshots/step-5)
+// Usage: npm run screenshots [-- <outDir> [admin|staff|approver]]   (default ../Ai-calling-docs/screenshots/dashboard)
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -11,7 +11,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 
 const FRONT = 'http://localhost:3000';
 const API = 'http://localhost:4000';
-const OUT = process.argv[2] ?? path.resolve(HERE, '../../docs/screenshots/step-5');
+const OUT = process.argv[2] ?? path.resolve(HERE, '../../Ai-calling-docs/screenshots/dashboard');
 const PORT = 9333;
 fs.mkdirSync(OUT, { recursive: true });
 
