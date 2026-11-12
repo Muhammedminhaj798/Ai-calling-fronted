@@ -1,21 +1,23 @@
 // Central API client + session store. Backend conventions (backend/src/modules/auth): Bearer access token
-// (15 min), refresh token in an HTTP-only cookie scoped to /api/auth on the API origin, rotated on every
-// refresh. The access token lives in sessionStorage (per tab); on 401 we refresh once and re-send.
+// (15 min), refresh token in an HTTP-only cookie scoped to /api/auth, rotated on every refresh. Requests use
+// same-origin /api/... paths that next.config.ts proxies to the backend, so that cookie is first-party.
+// The access token lives in sessionStorage (per tab); on 401 we refresh once and re-send.
 import type { AuthSession, SafeUser } from './types';
 
-export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000').replace(/\/$/, '');
 const TOKEN_KEY = 'pharmacy.accessToken';
 const DEFAULT_TIMEOUT_MS = 15_000;
 
 export class ApiError extends Error {
-  constructor(
-    public readonly status: number,
-    public readonly code: string,
-    message: string,
-    public readonly details?: unknown,
-  ) {
+  // Plain fields, not parameter properties, so `node --test` can strip the types natively.
+  readonly status: number;
+  readonly code: string;
+  readonly details?: unknown;
+  constructor(status: number, code: string, message: string, details?: unknown) {
     super(message);
     this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+    this.details = details;
   }
 }
 
@@ -24,7 +26,7 @@ export function toApiError(err: unknown): ApiError {
   const name = (err as { name?: string } | null)?.name;
   if (name === 'TimeoutError') return new ApiError(0, 'TIMEOUT', 'The API server did not respond in time');
   if (name === 'AbortError') return new ApiError(0, 'ABORTED', 'Request cancelled');
-  return new ApiError(0, 'NETWORK', `Cannot reach the API server at ${API_URL}`);
+  return new ApiError(0, 'NETWORK', 'Cannot reach the API server');
 }
 
 // --- session store (useSyncExternalStore-compatible) ---
@@ -73,6 +75,8 @@ export interface RequestInit {
   body?: unknown;
   signal?: AbortSignal;
   timeoutMs?: number;
+  /** Let the request finish even if the page unloads (reload, navigation) while it is in flight. */
+  keepalive?: boolean;
 }
 
 async function send<T>(path: string, init: RequestInit): Promise<T> {
@@ -81,12 +85,13 @@ async function send<T>(path: string, init: RequestInit): Promise<T> {
   const bearer = loadToken();
   if (bearer) headers['authorization'] = `Bearer ${bearer}`;
   const signals = [AbortSignal.timeout(init.timeoutMs ?? DEFAULT_TIMEOUT_MS), ...(init.signal ? [init.signal] : [])];
-  const res = await fetch(API_URL + path, {
+  const res = await fetch(path, {
     method: init.method ?? 'GET',
     headers,
     body: init.body === undefined ? undefined : JSON.stringify(init.body),
     credentials: 'include',
     signal: AbortSignal.any(signals),
+    keepalive: init.keepalive,
   });
   const text = res.status === 204 ? '' : await res.text();
   let data: unknown;
@@ -97,12 +102,14 @@ async function send<T>(path: string, init: RequestInit): Promise<T> {
   }
   if (!res.ok) {
     const e = (data as { error?: { code?: string; message?: string; details?: unknown } } | undefined)?.error;
+    // A 5xx without the backend's JSON error body came from the proxy itself (backend down, starting or timing out).
+    if (!e && res.status >= 500) throw new ApiError(res.status, 'API_UNAVAILABLE', 'The API server is not reachable right now');
     throw new ApiError(res.status, e?.code ?? `HTTP_${res.status}`, e?.message ?? res.statusText ?? 'Request failed', e?.details);
   }
   return data as T;
 }
 
-/** Typed request. 401 → one refresh + re-send (the server rejected before any handler ran); network failure → one retry for GET only. */
+/** Typed request. 401 → one refresh + re-send (the server rejected before any handler ran); network failure or unreachable API → one retry for GET only. */
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const method = init.method ?? 'GET';
   try {
@@ -113,7 +120,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
       if (await refreshSession()) return send<T>(path, init);
       throw apiErr;
     }
-    if (apiErr.status === 0 && apiErr.code === 'NETWORK' && method === 'GET' && !init.signal?.aborted) {
+    if ((apiErr.code === 'NETWORK' || apiErr.code === 'API_UNAVAILABLE') && method === 'GET' && !init.signal?.aborted) {
       await new Promise((r) => setTimeout(r, 400));
       return send<T>(path, init).catch((e) => Promise.reject(toApiError(e)));
     }
@@ -147,19 +154,34 @@ export async function fetchAll<T>(path: string, params: Record<string, string | 
 
 // --- auth ---
 let refreshing: Promise<boolean> | null = null;
+const SUPERSEDED_RETRY_DELAY_MS = 1_000;
 
-/** Rotates the refresh cookie into a new access token. Serialised across tabs with the Web Locks API, because a rotated refresh token presented twice revokes the whole session family. */
+/**
+ * Rotates the refresh cookie into a new access token. Serialised across tabs with the Web Locks API, because a
+ * rotated refresh token presented again later revokes the whole session family. `keepalive` lets a refresh that
+ * is in flight when the page reloads still complete, so the rotated cookie is stored instead of lost.
+ * For 30 s after a rotation the server refuses the previous token with REFRESH_TOKEN_SUPERSEDED without revoking
+ * anything: another request (a reload's keepalive refresh, a browser without Web Locks) rotated it a moment ago,
+ * so retry once with whatever cookie the browser holds by then. Still superseded means this browser never got the
+ * successor: log out with the old cookie so the server ends that successor too.
+ */
 export function refreshSession(): Promise<boolean> {
   refreshing ??= (async () => {
+    const rotate = () => send<AuthSession>('/api/auth/refresh', { method: 'POST', body: {}, keepalive: true });
     const run = async () => {
-      const s = await send<AuthSession>('/api/auth/refresh', { method: 'POST', body: {} });
+      const s = await rotate().catch(async (err: unknown) => {
+        if (toApiError(err).code !== 'REFRESH_TOKEN_SUPERSEDED') throw err;
+        await new Promise((r) => setTimeout(r, SUPERSEDED_RETRY_DELAY_MS));
+        return rotate();
+      });
       storeToken(s.accessToken);
       setSession({ status: 'authenticated', user: s.user });
       return true;
     };
     try {
       return await (typeof navigator !== 'undefined' && navigator.locks ? navigator.locks.request('pharmacy-session-refresh', run) : run());
-    } catch {
+    } catch (err) {
+      if (toApiError(err).code === 'REFRESH_TOKEN_SUPERSEDED') await send('/api/auth/logout', { method: 'POST', body: {} }).catch(() => undefined);
       clearSession();
       return false;
     } finally {

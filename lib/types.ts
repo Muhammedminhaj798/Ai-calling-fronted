@@ -76,12 +76,11 @@ export interface SafeUser {
   createdAt: string;
 }
 
+/** Login/refresh response. The refresh token is never in it: it lives only in the HTTP-only cookie. */
 export interface AuthSession {
   accessToken: string;
   tokenType: 'Bearer';
   expiresIn: number;
-  refreshToken: string;
-  refreshTokenExpiresAt: string;
   user: SafeUser;
 }
 

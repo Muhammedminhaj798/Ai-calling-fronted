@@ -9,10 +9,14 @@ Next.js 16 (App Router, Cache Components) · React 19 · Tailwind 4 · Lucide ic
 cd ../backend && npm install && npm run dev
 
 # 2. dashboard (port 3000)
-cp .env.example .env.local        # NEXT_PUBLIC_API_URL=http://localhost:4000
+cp .env.example .env.local        # API_PROXY_TARGET=http://localhost:4000
 npm install
 npm run dev                       # or: npm run build && npm run start
 ```
+
+The browser calls only same-origin `/api/...` paths. `next.config.ts` rewrites them to `API_PROXY_TARGET` (on Vercel, an external rewrite acting as a reverse proxy), so the backend's `HttpOnly; Secure; SameSite=Strict` refresh cookie is first-party and CORS is not involved. `API_PROXY_TARGET` is server-side only (never `NEXT_PUBLIC_`) and must be an origin such as `https://ai-calling-backend-1kmy.onrender.com`. `next build` and `next start` fail without it; `next dev` falls back to `http://localhost:4000`. Plain `http` is accepted only for localhost.
+
+**Vercel:** set `API_PROXY_TARGET` for Production and Preview, then redeploy. `NEXT_PUBLIC_API_URL` is no longer read.
 
 Sign in with a staff user. For a development database, `cd ../backend && npm run seed -- --samples` creates the admin from `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` plus `staff@example.com` and `approver@example.com` (same password) and clearly labelled mock products and one mock customer.
 
@@ -35,7 +39,8 @@ npm test            # node --test lib/**/*.test.ts (no framework)
 | `components/shell.tsx` | sidebar (role-filtered nav, collapsible, mobile drawer), header, notifications, profile menu |
 | `components/ui.tsx` | the UI kit: badges, buttons, cards, tables, pagination, states, fields, native `<dialog>`, customer picker |
 | `components/charts.tsx` | Recharts bars (single hue, no animation) |
-| `lib/api.ts` | fetch client: Bearer token in sessionStorage, refresh-cookie rotation on 401, timeouts, GET retry, `fetchAll` page walker |
+| `lib/api.ts` | fetch client: same-origin `/api` paths, Bearer token in sessionStorage, refresh-cookie rotation on 401 (`keepalive`, so a reload mid-refresh keeps the rotated cookie; one retry on `REFRESH_TOKEN_SUPERSEDED`), timeouts, GET retry (network or proxy 5xx), `fetchAll` page walker |
+| `lib/proxy-target.ts` | validates `API_PROXY_TARGET` for the `/api/*` rewrite in `next.config.ts` (tested) |
 | `lib/use-api.ts` | `useSession`, `useLoad`/`useApi` (polling, stale-while-refresh), `useDebounce`, `useAction` |
 | `lib/types.ts` | TypeScript mirror of the backend responses |
 | `lib/metrics.ts` | client-side aggregation for overview/reports + CSV (tested) |
