@@ -1,9 +1,9 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
-import { Async, Card, CustomerPicker, Empty, Field, Input, LinkButton, PageHeader, Pagination, Select, Status, Table, Td, Th, Toolbar, enumOptions } from '@/components/ui';
+import { Async, Badge, Card, CustomerPicker, Empty, Field, Input, LinkButton, PageHeader, Pagination, Select, Status, Table, Td, Th, Toolbar, enumOptions } from '@/components/ui';
 import { qs } from '@/lib/api';
-import { fmtDateTime, money, shortId } from '@/lib/format';
+import { fmtDateTime, isTestCall, money, shortId } from '@/lib/format';
 import { endOfDay, startOfDay } from '@/lib/metrics';
 import { ORDER_STATUSES, type OrderListItem, type Page } from '@/lib/types';
 import { useApi, useDebounce } from '@/lib/use-api';
@@ -98,9 +98,12 @@ export default function OrdersPage() {
                         <Td>{fmtDateTime(o.createdAt)}</Td>
                         <Td mono>
                           {o.callId ? (
-                            <Link href={`/dashboard/calls/${o.callId}`} className="text-blue-700 hover:underline" title={o.callId}>
-                              {shortId(o.callId)}
-                            </Link>
+                            <span className="flex items-center gap-1">
+                              <Link href={`/dashboard/calls/${o.callId}`} className="text-blue-700 hover:underline" title={o.callId}>
+                                {shortId(o.callId)}
+                              </Link>
+                              {isTestCall(o.call?.provider) && <Badge tone="amber">Test</Badge>}
+                            </span>
                           ) : (
                             <span className="text-slate-400">manual</span>
                           )}

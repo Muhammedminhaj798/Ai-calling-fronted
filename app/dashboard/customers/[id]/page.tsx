@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Async, Badge, Card, Empty, KeyValue, LinkButton, PageHeader, Status, Table, Td, Th } from '@/components/ui';
 import { qs } from '@/lib/api';
-import { fmtDateTime, fmtDuration, languageName, money } from '@/lib/format';
+import { fmtDateTime, fmtDuration, isTestCall, languageName, money } from '@/lib/format';
 import type { CallListItem, Customer, OrderListItem, Page } from '@/lib/types';
 import { useApi } from '@/lib/use-api';
 
@@ -107,7 +107,10 @@ export default function CustomerDetailPage() {
                               {languageName(call.language)} · {fmtDuration(call.durationSeconds)}
                             </span>
                           </span>
-                          <Status value={call.status} />
+                          <span className="flex items-center gap-1">
+                            {isTestCall(call.provider) && <Badge tone="amber">Test</Badge>}
+                            <Status value={call.status} />
+                          </span>
                         </li>
                       ))}
                     </ul>

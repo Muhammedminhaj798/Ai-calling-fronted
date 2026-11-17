@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { Async, Badge, Banner, Card, Empty, KeyValue, LinkButton, PageHeader, Status, Table, Td, Th, cx } from '@/components/ui';
 import { api, qs } from '@/lib/api';
-import { fmtDateTime, fmtTime, isMockProvider, label, languageName, money, providerName } from '@/lib/format';
+import { fmtDateTime, fmtTime, isTestCall, label, languageName, money, providerName } from '@/lib/format';
 import type { CallDetail, CallEvent, ExceptionRecord, Page, ToolEventData, Transcript } from '@/lib/types';
 import { useApi, useLoad } from '@/lib/use-api';
 
@@ -55,11 +55,16 @@ export default function CallDetailPage() {
               actions={
                 <>
                   <Status value={call.status} />
-                  <Badge tone={isMockProvider(call.provider) ? 'amber' : 'green'}>{isMockProvider(call.provider) ? 'Mock / simulated session' : 'Live provider'}</Badge>
+                  <Badge tone={isTestCall(call.provider) ? 'amber' : 'green'}>{isTestCall(call.provider) ? 'Test call' : 'Live provider'}</Badge>
                   {call.order && <LinkButton href={`/dashboard/orders/${call.order.id}`}>Open order {call.order.orderNumber}</LinkButton>}
                 </>
               }
             />
+            {isTestCall(call.provider) && (
+              <Banner>
+                <strong>Test call</strong> ({providerName(call.provider)}): not a customer phone call. Its order, if any, still needs customer confirmation, stock reservation and staff approval like any other.
+              </Banner>
+            )}
             {call.live && (
               <Banner tone="blue">
                 Session is live in memory: state <strong>{label(call.live.state)}</strong>, {call.live.turns} customer turns, {call.live.candidates} catalogue candidates offered. This page refreshes every 5 seconds.

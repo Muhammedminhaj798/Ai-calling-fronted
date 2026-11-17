@@ -22,9 +22,13 @@ export const secondsSince = (iso: string, now = Date.now()): number => Math.max(
 export const LANGUAGE_NAMES: Record<Language, string> = { en: 'English', ml: 'Malayalam', ta: 'Tamil', hi: 'Hindi' };
 export const languageName = (l?: string | null): string => (l ? (LANGUAGE_NAMES[l as Language] ?? l) : '—');
 
-export const PROVIDER_NAMES: Record<string, string> = { simulator: 'Text simulation', mock: 'Mock telephony', exotel: 'Exotel' };
+export const PROVIDER_NAMES: Record<string, string> = { simulator: 'Text simulation', mock: 'Mock telephony', livekit: 'LiveKit browser test', exotel: 'Exotel', none: 'No phone line' };
 export const providerName = (p?: string | null): string => (p ? (PROVIDER_NAMES[p] ?? p) : '—');
-export const isMockProvider = (p?: string | null): boolean => p === 'mock' || p === 'simulator';
+/**
+ * Call sources that are never a customer's phone call (calls.provider): text simulator, mock telephony, LiveKit
+ * browser test. Mirrors TEST_CALL_PROVIDERS in backend/src/modules/calls/calls.service.ts.
+ */
+export const isTestCall = (p?: string | null): boolean => p === 'mock' || p === 'simulator' || p === 'livekit';
 
 /** "pending_staff_approval" → "Pending staff approval" */
 export const label = (v?: string | null): string => (v ? v.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase()) : '—');

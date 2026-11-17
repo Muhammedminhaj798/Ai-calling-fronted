@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { Async, Badge, Banner, Button, Card, Dialog, Empty, ErrorBox, KeyValue, LinkButton, PageHeader, Status, Table, Td, Textarea, Th, cx } from '@/components/ui';
 import { api } from '@/lib/api';
-import { fmtDateTime, label, money } from '@/lib/format';
+import { fmtDateTime, isTestCall, label, money, providerName } from '@/lib/format';
 import type { Customer, OrderDetail, OrderItem, OrderStatus, ReservationOutcome } from '@/lib/types';
 import { useAction, useApi, useSession } from '@/lib/use-api';
 
@@ -87,6 +87,11 @@ export default function OrderDetailPage() {
                 </>
               }
             />
+            {isTestCall(order.call?.provider) && (
+              <Banner>
+                <strong>Taken on a test call</strong> ({providerName(order.call?.provider)}), not a customer phone call. Check with the customer before approving.
+              </Banner>
+            )}
             {!canDecide && order.status === 'pending_staff_approval' && <Banner tone="blue">This order is waiting for staff approval. Only approvers and admins can approve or reject it.</Banner>}
             {flagged.length > 0 && (
               <Banner>
@@ -150,9 +155,12 @@ export default function OrderDetailPage() {
                       [
                         'Call',
                         order.callId ? (
-                          <Link key="call" href={`/dashboard/calls/${order.callId}`} className="font-mono text-xs text-blue-700 hover:underline">
-                            {order.callId.slice(0, 8)}
-                          </Link>
+                          <span key="call" className="flex items-center gap-2">
+                            <Link href={`/dashboard/calls/${order.callId}`} className="font-mono text-xs text-blue-700 hover:underline">
+                              {order.callId.slice(0, 8)}
+                            </Link>
+                            {isTestCall(order.call?.provider) && <Badge tone="amber">Test call</Badge>}
+                          </span>
                         ) : (
                           'Entered manually'
                         ),

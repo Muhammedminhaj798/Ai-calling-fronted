@@ -13,6 +13,7 @@
     "screenshots": "node scripts/screenshots.mjs"
   },
   "dependencies": {
+    "livekit-client": "2.23.0",
     "lucide-react": "^1.71.0",
     "next": "16.4.5",
     "react": "19.3.0",

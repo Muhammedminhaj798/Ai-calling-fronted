@@ -4,9 +4,9 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { DayBars, RankedBars } from '@/components/charts';
-import { Async, Card, Empty, PageHeader, Select, Status, cx } from '@/components/ui';
+import { Async, Badge, Card, Empty, PageHeader, Select, Status, cx } from '@/components/ui';
 import { api, fetchAll, qs } from '@/lib/api';
-import { fmtDateTime, fmtTime, label, languageName, money } from '@/lib/format';
+import { fmtDateTime, fmtTime, isTestCall, label, languageName, money } from '@/lib/format';
 import { countBy, countPerDay, percent, rangeFor, startOfDay, summariseCalls, type Preset } from '@/lib/metrics';
 import type { CallListItem, ExceptionRecord, OrderListItem, OrderRecord, Page } from '@/lib/types';
 import { useLoad } from '@/lib/use-api';
@@ -118,7 +118,10 @@ export default function OverviewPage() {
                         <span className="block truncate text-blue-700 hover:underline">{c.customer?.name ?? c.fromNumber}</span>
                         <span className="block text-xs text-slate-500">{fmtTime(c.startedAt)} · {languageName(c.language)}</span>
                       </Link>
-                      <Status value={c.status} />
+                      <span className="flex items-center gap-1">
+                        {isTestCall(c.provider) && <Badge tone="amber">Test</Badge>}
+                        <Status value={c.status} />
+                      </span>
                     </li>
                   ))}
                 </ul>

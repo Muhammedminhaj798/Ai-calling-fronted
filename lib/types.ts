@@ -76,6 +76,20 @@ export interface SafeUser {
   createdAt: string;
 }
 
+/**
+ * POST /api/voice/sessions (201): a LiveKit room with the voice worker dispatched into it, and this browser's
+ * short-lived join token (backend/src/modules/voice/voice.service.ts → VoiceSession).
+ */
+export interface VoiceSession {
+  roomName: string;
+  /** wss:// URL of the LiveKit server */
+  serverUrl: string;
+  participantToken: string;
+  participantIdentity: string;
+  /** The token only admits a join within this many seconds. */
+  expiresInSeconds: number;
+}
+
 /** Login/refresh response. The refresh token is never in it: it lives only in the HTTP-only cookie. */
 export interface AuthSession {
   accessToken: string;
@@ -343,6 +357,8 @@ export interface OrderBase {
   customerConfirmedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** The call the order was taken on; its provider tells a test call apart (lib/format.ts isTestCall). */
+  call: { id: string; provider: string } | null;
 }
 
 export type OrderListLine = Pick<OrderItem, 'id' | 'lineNo' | 'nameSnapshot' | 'requestedText' | 'quantity' | 'status' | 'stockStatus' | 'customerDecision'>;

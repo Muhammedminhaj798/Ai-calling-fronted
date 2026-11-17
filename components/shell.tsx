@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Mic,
   Package,
   PhoneCall,
   Pill,
@@ -40,6 +41,8 @@ export const NAV: NavItem[] = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard, exact: true },
   { href: '/dashboard/live-calls', label: 'Live Calls', icon: PhoneCall },
   { href: '/dashboard/calls', label: 'Call History', icon: History },
+  // Browser-microphone test of the voice agent over LiveKit (not a phone call). Admins only, as in the API.
+  { href: '/dashboard/voice-test', label: 'Test Voice Call', icon: Mic, roles: ['admin'] },
   { href: '/dashboard/orders', label: 'Orders', icon: ClipboardList },
   // Staff may read the queue through Orders; only approvers and admins decide, so only they get the menu entry.
   { href: '/dashboard/approvals', label: 'Approvals', icon: CheckSquare, roles: ['admin', 'approver'] },

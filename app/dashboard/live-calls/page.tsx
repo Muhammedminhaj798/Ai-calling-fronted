@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { Async, Badge, Banner, Card, Empty, Field, Input, LinkButton, PageHeader, Select, Status, Table, Td, Th, Toolbar, enumOptions } from '@/components/ui';
 import { qs } from '@/lib/api';
-import { fmtDuration, fmtTime, isMockProvider, languageName, providerName, secondsSince } from '@/lib/format';
+import { fmtDuration, fmtTime, isTestCall, languageName, providerName, secondsSince } from '@/lib/format';
 import { LANGUAGES, type CallListItem, type Page, type Settings } from '@/lib/types';
 import { useApi } from '@/lib/use-api';
 
@@ -25,17 +25,18 @@ export default function LiveCallsPage() {
     return (q.data?.data ?? []).filter((c) => (!language || c.language === language) && (!needle || `${c.fromNumber} ${c.customer?.name ?? ''} ${c.customer?.externalCode ?? ''}`.toLowerCase().includes(needle)));
   }, [q.data, language, search]);
   const telephony = settings.data?.providers.telephony.provider;
+  const noPhoneLine = telephony === 'mock' || telephony === 'none';
 
   return (
     <>
       <PageHeader
         title="Live Calls"
         description="Sessions the conversation engine is handling right now. Refreshes every 5 seconds."
-        actions={telephony && <Badge tone={telephony === 'mock' ? 'amber' : 'green'}>Telephony provider: {telephony === 'mock' ? 'mock' : providerName(telephony)}</Badge>}
+        actions={telephony && <Badge tone={noPhoneLine ? 'amber' : 'green'}>Telephony provider: {telephony === 'mock' ? 'mock' : providerName(telephony)}</Badge>}
       />
-      {telephony === 'mock' && (
+      {noPhoneLine && (
         <Banner>
-          The telephony provider is <strong>mock</strong>: sessions listed here come from the text simulator or the mock media stream, not from real customer phone calls.
+          No customer phone line is connected (telephony provider <strong>{telephony}</strong>): every session listed here is a test call — text simulator, mock media stream or LiveKit browser test — not a customer phone call.
         </Banner>
       )}
       <Toolbar>
@@ -99,7 +100,7 @@ export default function LiveCallsPage() {
                       <Status value={c.status} />
                     </Td>
                     <Td>
-                      <Badge tone={isMockProvider(c.provider) ? 'amber' : 'green'}>{providerName(c.provider)}</Badge>
+                      <Badge tone={isTestCall(c.provider) ? 'amber' : 'green'}>{isTestCall(c.provider) ? `Test · ${providerName(c.provider)}` : providerName(c.provider)}</Badge>
                     </Td>
                     <Td right>
                       <LinkButton size="sm" href={`/dashboard/calls/${c.id}`}>

@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Async, Badge, Card, CustomerPicker, Empty, Field, Input, LinkButton, PageHeader, Pagination, Select, Status, Table, Td, Th, Toolbar, enumOptions } from '@/components/ui';
 import { qs } from '@/lib/api';
-import { fmtDateTime, fmtDuration, isMockProvider, languageName, providerName, shortId } from '@/lib/format';
+import { fmtDateTime, fmtDuration, isTestCall, languageName, providerName, shortId } from '@/lib/format';
 import { endOfDay, startOfDay } from '@/lib/metrics';
 import { CALL_STATUSES, LANGUAGES, type CallListItem, type Page } from '@/lib/types';
 import { useApi } from '@/lib/use-api';
@@ -119,7 +119,7 @@ export default function CallsPage() {
                       </Td>
                       <Td>{c.status === 'handed_over' ? <Badge tone="amber">{c.handoverReason ?? 'handed over'}</Badge> : '—'}</Td>
                       <Td>
-                        <Badge tone={isMockProvider(c.provider) ? 'amber' : 'green'}>{providerName(c.provider)}</Badge>
+                        <Badge tone={isTestCall(c.provider) ? 'amber' : 'green'}>{isTestCall(c.provider) ? `Test · ${providerName(c.provider)}` : providerName(c.provider)}</Badge>
                       </Td>
                       <Td right>
                         <LinkButton size="sm" href={`/dashboard/calls/${c.id}`}>

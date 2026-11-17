@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Async, Badge, Banner, Card, CustomerPicker, Empty, Field, LinkButton, PageHeader, Pagination, Status, Table, Td, Th, Toolbar, cx } from '@/components/ui';
 import { qs } from '@/lib/api';
-import { fmtDateTime, money } from '@/lib/format';
+import { fmtDateTime, isTestCall, money } from '@/lib/format';
 import type { OrderListItem, OrderRecord, Page } from '@/lib/types';
 import { useApi, useSession } from '@/lib/use-api';
 
@@ -81,6 +81,11 @@ export default function ApprovalsPage() {
                             <Link href={`/dashboard/orders/${o.id}`} className="text-blue-700 hover:underline">
                               {o.orderNumber}
                             </Link>
+                            {isTestCall(o.call?.provider) && (
+                              <Badge tone="amber" className="ml-1">
+                                Test call
+                              </Badge>
+                            )}
                           </Td>
                           <Td>{o.customer.name}</Td>
                           <Td right>

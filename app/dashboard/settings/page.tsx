@@ -8,6 +8,7 @@ import { useApi, useSession } from '@/lib/use-api';
 
 function ProviderBadge({ p }: { p: ProviderStatus }) {
   if (p.provider === 'mock') return <Badge tone="amber">Mock</Badge>;
+  if (p.provider === 'none') return <Badge tone="slate">Disabled</Badge>;
   return p.configured ? <Badge tone="green">Configured</Badge> : <Badge tone="red">Not configured</Badge>;
 }
 /** Live verification happened for none of the providers (docs/step-4.1-live-provider-verification.md). */
